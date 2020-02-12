@@ -1,10 +1,19 @@
 # Cheetah: P4 code
 
-We implemented Cheetah in P4 on the Tofino. Due to NDA restrictions, we only provide a simplified implementation in P4_16 for both the stateless and stateful implementations. 
+We implemented Cheetah in P4 on the Tofino. Due to NDA restrictions, we only provide a simplified implementation in P4_16 for both the stateless and stateful implementations. The stateless implementation is fixing the cookie.
 
 ## Running the code
 
 We wrote the code on top of the VM provided by ETH Zurich for P4 emulation [link](https://github.com/nsg-ethz/p4-learning). Refer to their tutorial to set up the environment and run the code. 
+
+However, here is a short list of instructions for Ubuntu 18.04, please refer to the full tutorial if you encounter any problem in these steps:
+ * `sudo apt install virtualbox vagrant`
+ * `git clone https://github.com/nsg-ethz/p4-learning.git`
+ * `cd p4-learning/vm/`
+ * Share this repository to /vagrant/cheetah-p4/ by adding the following line before the last *end* of the file : `config.vm.synced_folder '/home/tom/workspace/cheetah-p4/', '/vagrant/cheetah-p4'`, changing the first path to match the place where you checked out this repository.
+ * We suggest also removing `vb.gui = true` if you're connecting to a remote server.
+ * `vagrant up`
+ * Then connect to the vagrant machine with `vagrant ssh`
 
 ## Limitations
 
@@ -12,7 +21,7 @@ We currently assume all packets have the same TCP options (i.e., [`NOP`,`NOP`,`T
 
 ## Network topology
 
-We assume there is a single VIP with IP=`10.0.0.254`, a single client at `10.0.0.1` and two servers at `10.0.0.2` (`server_id=0`) and `10.0.0.3` (`server_id=1`), respectively.  We implemented a weighted LB with 6 buckets. The first four buckets are assigned to `10.0.0.2` and the last two to `10.0.0.3`. 
+We assume there is a single VIP with IP=`10.0.0.254`, a single client at `10.0.0.1` and two servers at `10.0.0.2` (`server_id=0`) and `10.0.0.3` (`server_id=1`), respectively. We implemented a weighted LB with 6 buckets. The first four buckets are assigned to `10.0.0.2` and the last two to `10.0.0.3`.
 
 ## Stateless Cheetah
 
@@ -20,9 +29,12 @@ The main P4 code can be found in `stateless-cheetah.p4`. The Cheetah load balanc
 
 To test the system, one has to launch the environment:
 
-`sudo p4run --conf=p4app-stateless.json`
+```bash
+cd /vagrant/cheetah-p4/
+sudo p4run --conf=p4app-stateless.json
+```
 
-Open multiple windows, one per client/server, one per link, and one for the switch. On the terminals for the links, monitor the traffic with tcpdump:
+Open multiple windows, one per client/server, one per link, and one for the switch. We suggest using tmux, available on the machine to do so. On the terminals for the links, monitor the traffic with tcpdump:
 
 `sudo tcpdump -xxx -i s1-eth1`
 
@@ -52,9 +64,9 @@ and on the client:
 
 `sudo arp -s 10.0.0.254 00:50:ba:85:85:ca`, followed by
 
-`python send-syn-port-10.py 10.0.0.254 hey`
+`python send_syn_port_10.py 10.0.0.254 hey`
 
-This will generate a message that will be send to `10.0.0.2`. The fifth time a SYN is generate, the packet will be sent to `10.0.0.3`.
+This will generate a message that will be send to `10.0.0.2`. The fifth time a SYN is generate, the packet will be sent to `10.0.0.3`i (because the weighted round robin is set to a 4/2 ratio).
 
 Generate now a SYN-ACK from `10.0.0.2`:
 
