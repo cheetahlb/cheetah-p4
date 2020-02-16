@@ -54,8 +54,12 @@ header Tcp_option_end_h {
 header Tcp_option_nop_h {
     bit<8> kind;
 }
+header Tcp_option_sz_h {
+    bit<8> length;
+}
 header Tcp_option_ss_h {
     bit<8>  kind;
+    bit<8> length;
     bit<32> maxSegmentSize;
 }
 header Tcp_option_s_h {
@@ -75,6 +79,25 @@ header Tcp_option_timestamp_h {
     bit<16>        tsecr_msb;
     bit<16>        tsecr_lsb;
 }
+
+//Versions without the kind for hop by hop
+header Tcp_option_ss_e {
+    bit<8> length;
+    bit<16> maxSegmentSize;
+}
+
+header Tcp_option_sack_e {
+    varbit<256>    sack;
+}
+header Tcp_option_timestamp_e {
+    bit<8>         length;
+    bit<16>        tsval_msb;
+    bit<16>        tsval_lsb;
+    bit<16>        tsecr_msb;
+    bit<16>        tsecr_lsb;
+}
+
+//Unused (does not compile yet)
 header_union Tcp_option_h {
     Tcp_option_end_h  end;
     Tcp_option_nop_h  nop;
@@ -97,9 +120,16 @@ struct headers {
     tcp_t            tcp;
     //Tcp_option_stack tcp_options_vec;
     //Tcp_option_padding_h tcp_options_padding;
+    //Linux established nop nop ts
     Tcp_option_nop_h nop1;
     Tcp_option_nop_h nop2;
-    Tcp_option_timestamp_h timestamp;
+    //Linux MSS SACK TS
+    Tcp_option_ss_e ss;
+    Tcp_option_nop_h nop3;
+    Tcp_option_sz_h sackw;
+    Tcp_option_sack_e sack;
+    Tcp_option_nop_h nop4;
+    Tcp_option_timestamp_e timestamp;
 }
 
 struct fwd_metadata_t {

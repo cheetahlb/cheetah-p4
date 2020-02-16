@@ -115,18 +115,54 @@ control MyIngress(inout headers hdr,
     size = 65536;
   }
 
+
+// This is one way to perform a normal one's complement sum of two
+// 16-bit values.
+action ones_complement_sum(in bit<16> x, in bit<16> y, out bit<16> sum) {
+    bit<17> ret = (bit<17>) x + (bit<17>) y;
+    if (ret[16:16] == 1) {
+        ret = ret + 1;
+    }
+    sum = ret[15:0];
+}
+
+// Restriction: data is a multiple of 16 bits long
+action subtract(inout bit<16> sum, bit<16> d) {
+        ones_complement_sum(sum, ~d, sum);
+}
+
+action subtract32(inout bit<16> sum, bit<32> d) {
+        ones_complement_sum(sum, ~(bit<16>)d[15:0], sum);
+        ones_complement_sum(sum, ~(bit<16>)d[31:16], sum);
+}
+
+action add(inout bit<16> sum, bit<16> d) {
+        ones_complement_sum(sum, d, sum);
+}
+
+
+action add32(inout bit<16> sum, bit<32> d) {
+        ones_complement_sum(sum, (bit<16>)(d[15:0]), sum);
+        ones_complement_sum(sum, (bit<16>)(d[31:16]), sum);
+}
+
   apply {
       server_id = 0;
         if(hdr.ipv4.isValid()){
 
           vip_ip.read(vip, 0);
           if(hdr.ipv4.dstAddr==vip){ //If destination is the VIP, then this packets goes towards the server
-
             // incoming packet from client
-            if(hdr.tcp.isValid()){
+            if(hdr.tcp.isValid() && hdr.timestamp.isValid()){
 
               //Two cases: either it is a new connection (SYN is true), or it is an established one
               if(hdr.tcp.syn == 0){
+
+                bit <16> sum = 0;
+                subtract(sum, hdr.tcp.checksum);
+                subtract32(sum, hdr.ipv4.dstAddr);
+                subtract(sum, hdr.timestamp.tsecr_msb);
+                subtract(sum, hdr.timestamp.tsecr_lsb);
 
                 //old connection, extract cookie and obtain server_id
                 compute_packet_hash(hdr.ipv4.srcAddr, hdr.tcp.dstPort, hdr.tcp.srcPort, hdr.ipv4.protocol);
@@ -158,9 +194,18 @@ control MyIngress(inout headers hdr,
                   hdr.timestamp.tsecr_lsb = hdr.timestamp.tsecr_msb;
                   hdr.timestamp.tsecr_msb = server_timestamp;
                 }
-              }else{
+
+                add32(sum, hdr.ipv4.dstAddr);
+                add(sum, hdr.timestamp.tsecr_msb);
+                add(sum, hdr.timestamp.tsecr_lsb);
+                hdr.tcp.checksum = ~sum;
+              } else {
                 // new connection, get a server
                 bucket_counter.read(meta.bucket_id, 0);
+
+                bit<16> sum = 0;
+                subtract(sum, hdr.tcp.checksum);
+                subtract32(sum, hdr.ipv4.dstAddr);
 
                 // we use the bucket index to find the server
                 get_server_from_bucket.apply();

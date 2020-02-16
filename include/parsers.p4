@@ -129,12 +129,61 @@ parser MyParser(packet_in packet,
 
     state parse_tcp {
     	packet.extract(hdr.tcp);
+        //P4 16 is slightly getting there... But this is still not compiling, so
+        // we must manually parse a few known layouts...
         //Tcp_option_parser.apply(packet, hdr.tcp.dataOffset,
         //                        hdr.tcp_options_vec, hdr.tcp_options_padding);
         packet.extract(hdr.nop1);
+        transition select(hdr.nop1.kind){
+		1: parse_nop;
+            2: parse_ss;
+            4: parse_sack;
+            8: parse_ts;
+		default: accept;
+	}
+    }
+
+    state parse_nop {
         packet.extract(hdr.nop2);
+         transition select(hdr.nop2.kind){
+            1: parse_nop2;
+            8: parse_ts;
+		default: accept;
+	}
+    }
+    state parse_nop2 {
+        packet.extract(hdr.nop3);
+         transition select(hdr.nop3.kind){
+            8: parse_ts;
+		default: accept;
+	}
+    }
+    state parse_ss {
+        //Finish parsing SS
+        packet.extract(hdr.ss);
+        packet.extract(hdr.nop3);
+        transition select(hdr.nop3.kind){
+            4: parse_sack;
+            8: parse_ts;
+		default: accept;
+	}
+    }
+
+    state parse_sack {
+        //Finish parsing sack
+        packet.extract(hdr.sackw);
+        packet.extract(hdr.sack, (bit<32>)hdr.sackw.length - 2);
+        packet.extract(hdr.nop4);
+        transition select(hdr.nop4.kind){
+            8: parse_ts;
+		default: accept;
+	}
+    }
+
+    state parse_ts {
+        //Finish parsing ts
         packet.extract(hdr.timestamp);
-    	transition accept;
+        transition accept;
     }
 }
 
@@ -149,6 +198,12 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.tcp);
         packet.emit(hdr.nop1);
         packet.emit(hdr.nop2);
+        packet.emit(hdr.ss);
+        packet.emit(hdr.nop3);
+        packet.emit(hdr.sackw);
+        packet.emit(hdr.sack);
+        packet.emit(hdr.nop4);
         packet.emit(hdr.timestamp);
+
     }
 }
