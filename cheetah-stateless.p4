@@ -116,35 +116,33 @@ control MyIngress(inout headers hdr,
   }
 
 
-// This is one way to perform a normal one's complement sum of two
-// 16-bit values.
-action ones_complement_sum(in bit<16> x, in bit<16> y, out bit<16> sum) {
-    bit<17> ret = (bit<17>) x + (bit<17>) y;
-    if (ret[16:16] == 1) {
-        ret = ret + 1;
-    }
-    sum = ret[15:0];
-}
+  // Incremental checksum fix adapted from the pseudocode at https://p4.org/p4-spec/docs/PSA-v1.1.0.html#appendix-internetchecksum-implementation
+  action ones_complement_sum(in bit<16> x, in bit<16> y, out bit<16> sum) {
+      bit<17> ret = (bit<17>) x + (bit<17>) y;
+      if (ret[16:16] == 1) {
+          ret = ret + 1;
+      }
+      sum = ret[15:0];
+  }
 
-// Restriction: data is a multiple of 16 bits long
-action subtract(inout bit<16> sum, bit<16> d) {
+  // Restriction: data is a multiple of 16 bits long
+  action subtract(inout bit<16> sum, bit<16> d) {
         ones_complement_sum(sum, ~d, sum);
-}
+  }
 
-action subtract32(inout bit<16> sum, bit<32> d) {
+  action subtract32(inout bit<16> sum, bit<32> d) {
         ones_complement_sum(sum, ~(bit<16>)d[15:0], sum);
         ones_complement_sum(sum, ~(bit<16>)d[31:16], sum);
-}
+  }
 
-action add(inout bit<16> sum, bit<16> d) {
+  action add(inout bit<16> sum, bit<16> d) {
         ones_complement_sum(sum, d, sum);
-}
+  }
 
-
-action add32(inout bit<16> sum, bit<32> d) {
+  action add32(inout bit<16> sum, bit<32> d) {
         ones_complement_sum(sum, (bit<16>)(d[15:0]), sum);
         ones_complement_sum(sum, (bit<16>)(d[31:16]), sum);
-}
+  }
 
   apply {
       server_id = 0;
