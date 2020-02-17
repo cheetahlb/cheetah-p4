@@ -4,7 +4,9 @@
 
 // Parsing of TCP options taken from Andy Fingerhut: 
 // https://github.com/jafingerhut/p4-guide/blob/master/tcp-options-parser/tcp-options-parser.p4
-// parsing of TCP timestamp option added by Marco Chiesa
+// However most of that code is unused as of now, as the compilation is still tricky with the ETH VM.
+// Jump to line 100 for real stuffs.
+// parsing of TCP timestamp option added by Marco Chiesa, more layouts by Tom Barbette
 
 parser Tcp_option_parser(packet_in b,
                          in bit<4> tcp_hdr_data_offset,
@@ -101,6 +103,7 @@ parser Tcp_option_parser(packet_in b,
     }
 }
 
+//The real stuff now.
 parser MyParser(packet_in packet,
                 out headers hdr,
                 inout metadata meta,
@@ -108,7 +111,6 @@ parser MyParser(packet_in packet,
 
     state start {
     	transition parse_ethernet;
-        //TODO 2: Define a parser for ethernet, ipv4 and tcp
     }
 
     state parse_ethernet {
@@ -127,6 +129,8 @@ parser MyParser(packet_in packet,
     	}
     }
 
+    //Let's start the fun! We consider "nop" as actually a kind field, that we parse and then analyse to see what 
+    // option we actually just parsed and "finish" the parsing that started.
     state parse_tcp {
     	packet.extract(hdr.tcp);
         //P4 16 is slightly getting there... But this is still not compiling, so
@@ -204,6 +208,5 @@ control MyDeparser(packet_out packet, in headers hdr) {
         packet.emit(hdr.sack);
         packet.emit(hdr.nop4);
         packet.emit(hdr.timestamp);
-
     }
 }
