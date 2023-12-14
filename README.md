@@ -6,14 +6,11 @@ We implemented Cheetah in P4 on the Tofino. Due to NDA restrictions, we only pro
 
 We wrote the code on top of the VM provided by ETH Zurich for P4 emulation [link](https://github.com/nsg-ethz/p4-learning). Refer to their tutorial to set up the environment and run the code. 
 
-However, here is a short list of instructions for Ubuntu 18.04, please refer to the full tutorial if you encounter any problem in these steps:
- * `sudo apt install virtualbox vagrant`
- * `git clone https://github.com/nsg-ethz/p4-learning.git`
- * `cd p4-learning/vm/`
- * Share this repository to /vagrant/cheetah-p4/ by adding the following line before the last *end* of the file : `config.vm.synced_folder '/home/tom/workspace/cheetah-p4/', '/vagrant/cheetah-p4'`, changing the first path to match the place where you checked out this repository.
- * We suggest also removing `vb.gui = true` if you're connecting to a remote server.
- * `vagrant up`
- * Then connect to the vagrant machine with `vagrant ssh`
+However, here is a short list of instructions for Ubuntu 20.04, please refer to the full tutorial if you encounter any problem in these steps:
+ * `sudo apt install qemu-kvm`
+ * Follow instructions on `https://github.com/nsg-ethz/p4-utils.git` to bring up a VM with P4 BMV2 and necessary tools.
+ * Share or clone this repository to `cheetah-p4/`.
+ * Then connect to the vagrant machine. Note the default user/password of the pre-built images are p4/p4
 
 ## Limitations
 
