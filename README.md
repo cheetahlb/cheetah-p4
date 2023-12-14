@@ -4,6 +4,8 @@ We implemented Cheetah in P4 on the Tofino. Due to NDA restrictions, we only pro
 
 ## Running the code
 
+IMPORTANT NOTE: these instructions use the image provided at ETH in 2020, for a quick-fix python3 version adapted to the new images, check the `new` branch. 
+
 We wrote the code on top of the VM provided by ETH Zurich for P4 emulation [link](https://github.com/nsg-ethz/p4-learning). Refer to their tutorial to set up the environment and run the code. 
 
 However, here is a short list of instructions for Ubuntu 18.04, please refer to the full tutorial if you encounter any problem in these steps:
