@@ -16,7 +16,7 @@ def get_if():
             iface=i
             break;
     if not iface:
-        print "Cannot find eth0 interface"
+        print("Cannot find eth0 interface")
         exit(1)
     return iface
 
@@ -25,15 +25,17 @@ def get_dst_mac(ip):
     try:
         pid = Popen(["arp", "-n", ip], stdout=PIPE)
         s = pid.communicate()[0]
-        mac = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", s).groups()[0]
-        return mac
-    except:
+        mac = re.search(r"(([a-f\d]{1,2}\:){5}[a-f\d]{1,2})", s.decode('utf-8')).groups()
+        
+        return mac[0]
+    except Exception as e:
+        print("While parsing result from arp -n : ", e)
         return None
 
 def main():
 
     if len(sys.argv)<3:
-        print 'pass 2 arguments: <destination> "<message>"'
+        print('pass 2 arguments: <destination> "<message>"')
         exit(1)
 
     addr = socket.gethostbyname(sys.argv[1])
@@ -47,10 +49,10 @@ def main():
     ether_dst = get_dst_mac(addr)
 
     if not ether_dst:
-        print "Mac address for %s was not found in the ARP table" % addr
+        print("Mac address for %s was not found in the ARP table" % addr)
         exit(1)
 
-    print "Sending on interface %s to %s" % (iface, str(addr))
+    print("Sending on interface %s to %s" % (iface, str(addr)))
     pkt =  Ether(src=get_if_hwaddr(iface), dst=ether_dst)
     pkt = pkt /IP(dst=addr,tos=tos) / TCP(sport=10, dport=20, flags="S", seq=3, ack=10, options=[("NOP", None),("NOP", None),('Timestamp',(0,1023)),]) / sys.argv[2]
 
